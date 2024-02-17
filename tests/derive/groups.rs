@@ -239,3 +239,34 @@ For more information, try '--help'.
 ";
     assert_output::<Opt>("test", OUTPUT, true);
 }
+
+#[test]
+fn group_with_use_default() {
+    #[derive(Parser, Debug, PartialEq, Eq)]
+    struct Opt {
+        #[command(flatten)]
+        source: Source,
+    }
+
+    #[derive(clap::Args, Debug, PartialEq, Eq)]
+    #[group(required = true, multiple = false, use_default = "other")]
+    struct Source {
+        #[arg(long)]
+        one: bool,
+        #[arg(long, default_value_t = true)]
+        other: bool,
+        #[arg(long)]
+        something_else: bool,
+    }
+
+    assert_eq!(
+        Opt {
+            source: Source {
+                one: false,
+                other: true,
+                something_else: false,
+            },
+        },
+        Opt::try_parse_from(["test"]).unwrap()
+    );
+}

@@ -118,6 +118,29 @@ fn group_multi_value_single_arg() {
 }
 
 #[test]
+fn group_required_flags_default() {
+    let result = Command::new("group")
+        .arg(arg!(-f --flag "some flag"))
+        .arg(
+            Arg::new("color")
+                .long("color")
+                .action(ArgAction::SetTrue)
+                .default_value("true"),
+        )
+        .arg(arg!(-n --hostname <name> "another option"))
+        .group(
+            ArgGroup::new("grp")
+                .required(true)
+                .args(["hostname", "color", "flag"])
+                .use_default("flag"),
+        )
+        .try_get_matches_from(vec![""]);
+    assert!(result.is_ok());
+    let matches = result.unwrap();
+    assert_eq!(matches.get_flag("color"), true);
+}
+
+#[test]
 fn empty_group() {
     let r = Command::new("empty_group")
         .arg(arg!(-f --flag "some flag"))

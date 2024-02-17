@@ -288,11 +288,18 @@ impl<'cmd> Validator<'cmd> {
                     .iter()
                     .any(|a| matcher.check_explicit(a, &ArgPredicate::IsPresent))
                 {
-                    debug!(
-                        "Validator::validate_required:iter: Missing {:?}",
-                        group.get_id()
-                    );
-                    missing_required.push(group.get_id().clone());
+                    if group.default.is_none() {
+                        debug!(
+                            "Validator::validate_required:iter: Default provided {:?}",
+                            group.get_id()
+                        );
+                        missing_required.push(group.get_id().clone());
+                    } else {
+                        debug!(
+                            "Validator::validate_required:iter: Missing {:?}",
+                            group.get_id()
+                        );
+                    }
                 }
             }
         }

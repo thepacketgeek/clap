@@ -92,6 +92,7 @@ pub struct ArgGroup {
     pub(crate) requires: Vec<Id>,
     pub(crate) conflicts: Vec<Id>,
     pub(crate) multiple: bool,
+    pub(crate) default: Option<Id>,
 }
 
 /// # Builder
@@ -507,6 +508,47 @@ impl ArgGroup {
         }
         self
     }
+
+    /// Specify default arg to use when no flags are provided; arg id given must
+    /// have a default value set.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use clap_builder as clap;
+    /// # use clap::{Command, Arg, ArgGroup, error::ErrorKind, ArgAction};
+    /// let result = Command::new("myprog")
+    ///     .arg(Arg::new("flag")
+    ///         .short('f')
+    ///         .action(ArgAction::SetTrue)
+    ///         .default_value("true"))
+    ///     .arg(Arg::new("color")
+    ///         .short('c')
+    ///         .action(ArgAction::SetTrue))
+    ///     .arg(Arg::new("debug")
+    ///         .short('d')
+    ///         .action(ArgAction::SetTrue))
+    ///     .arg(Arg::new("verb")
+    ///         .short('v')
+    ///         .action(ArgAction::SetTrue))
+    ///     .group(ArgGroup::new("req_flags")
+    ///         .args(["flag", "color"])
+    ///         .conflicts_with_all(["debug", "verb"])
+    ///         .use_default("flag"))
+    ///     .try_get_matches_from(vec!["myprog"]);
+    /// // because no args were provided, the default_value of flag will be used
+    /// assert!(result.is_ok());
+    /// let matches = result.unwrap();
+    /// assert_eq!(matches.get_flag("flag"), true);
+    /// ```
+    #[must_use]
+    pub fn use_default(mut self, default_arg: impl IntoResettable<Id>) -> Self {
+        if self.default.is_some() {
+            panic!("use_default flag was provided multiple times");
+        }
+        self.default = default_arg.into_resettable().into_option();
+        self
+    }
 }
 
 /// # Reflection
@@ -607,5 +649,23 @@ mod test {
         for (pos, arg) in grp.get_args().enumerate() {
             assert_eq!(*arg, args[pos]);
         }
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_use_default_multiple_check() {
+        let _ = ArgGroup::new("test")
+            .arg("a1")
+            .arg("a4")
+            .args(["a2", "a3"])
+            .required(true)
+            .conflicts_with("c1")
+            .conflicts_with_all(["c2", "c3"])
+            .conflicts_with("c4")
+            .requires("r1")
+            .requires_all(["r2", "r3"])
+            .requires("r4")
+            .use_default("a1")
+            .use_default("a2");
     }
 }
